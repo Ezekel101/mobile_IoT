@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dimensions,
   SafeAreaView,
@@ -13,6 +14,14 @@ import {
 } from "react-native";
 
 const { width } = Dimensions.get("window");
+
+interface Patient {
+  id: number;
+  nom: string;
+  prenom: string;
+  mail: string;
+  numero: string;
+}
 
 function BarChart({ color }: { color: string }) {
   const bars = [60, 80, 70, 90, 75, 85, 65, 88, 72, 95, 68, 82];
@@ -116,6 +125,21 @@ function LineChart() {
 export default function Dashboard() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [patient, setPatient] = useState<Patient | null>(null);
+
+  useEffect(() => {
+    const fetchPatient = async () => {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) { router.push('/login'); return; }
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const response = await fetch(`http://192.168.43.19:3000/api/patients/${payload.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      setPatient(data);
+    };
+    fetchPatient();
+  }, []);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -125,9 +149,11 @@ export default function Dashboard() {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>AM</Text>
+            <Text style={styles.avatarText}>
+              {patient ? `${patient.prenom[0]}${patient.nom[0]}` : '??'}
+            </Text>
           </View>
-          <Text style={styles.headerTitle}>Andry Maryo</Text>
+          <Text style={styles.headerTitle}>{patient ? `${patient.prenom} ${patient.nom}` : 'Chargement...'}</Text>
         </View>
         <TouchableOpacity
           style={styles.logoutBtn}

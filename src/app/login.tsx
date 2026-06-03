@@ -1,17 +1,19 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-    ActivityIndicator,
-    SafeAreaView,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import { loginPatient } from '../services/api';
 
 export default function Login() {
   const router = useRouter();
@@ -21,12 +23,21 @@ export default function Login() {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setIsLoading(true);
-    setTimeout(() => {
+    try {
+      const data = await loginPatient(email, password);
+      if (data.token) {
+        await AsyncStorage.setItem('token', data.token);
+        router.push("/dashboard");
+      } else {
+        alert(data.error || "Identifiants incorrects");
+      }
+    } catch (err) {
+      alert(err);
+    } finally {
       setIsLoading(false);
-      router.push("/dashboard");
-    }, 2000);
+    }
   };
 
   return (
@@ -52,7 +63,7 @@ export default function Login() {
         {/* Card */}
         <View style={styles.card}>
           <View style={styles.iconCircle}>
-           <MaterialCommunityIcons name="shield" size={50} color="#1a3a8f" />
+            <MaterialCommunityIcons name="shield" size={50} color="#1a3a8f" />
           </View>
 
           <Text style={styles.title}>Bienvenue</Text>
